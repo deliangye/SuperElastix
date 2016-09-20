@@ -29,15 +29,42 @@ namespace selx
 LogComponent
 ::LogComponent( void )
 {
-  // this->m_LogLevel = boost::log::trivial::severity_level::info;
+
+
+  this->m_Logger = boost::log::source::severity_logger< SeverityLevel >();
+
+  // Add LineID and TimeStamp (ProcessID and ThreadID is also added, but not used)
+  boost::logging::add_common_attributes();
+
+    // TODO: Initialize parameters with values from blueprint
+  boost::logging::add_file_log(
+    keywords::file_name = "SuperElastix_%Y-%m-%d_%H-%M-%S.%N.log",           
+    keywords::rotation_size = 1024 * 1024 * 1024, // 1GB
+    keywords::time_based_rotation = sinks::file::rotation_at_time_point(0, 0, 0), // Everyday at midnight
+    keywords::format = "[%LineID% %TimeStamp% %ComponentName% %SeverityLevel%]: %Message%"
+  );
+
+  boost::logging::add_console_log(
+    std::cout, 
+    boost::log::keywords::format = "[%TimeStamp% %ComponentName% %SeverityLevel%]: %Message%"
+  );
+
+  this->m_LogLevel = boost::log::trivial::severity_level::info;
+  boost::logging::core::get()->set_filter( boost::logging::trivial::severity >= this->m_LogLevel );
 }
 
-std::stringstream
+void
 LogComponent
-::Log( boost::log::trivial::severity_level severity_level )
+::Log( SeverityLevel severityLevel, const std::string message )
 {
-  //return BOOST_LOG_TRIVIAL( ::boost::log::keywords::severity = severity_level );
-  return std::stringstream();
+  boost::logging::record record = this->m_Logger.open_record(keywords::severity = severityLevel);
+  if( record )
+  {
+    boost::logging::record_ostream strm( record );
+    strm << message;
+    strm.flush();
+    this->m_Logger.push_record( boost::move( record ) );
+  }
 }
 
 bool
