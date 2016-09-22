@@ -23,9 +23,8 @@
 //TODO: note, maybe this functionality shouldn't be called a Trait, since we use a method ::Get(). Is Policy a better name?
 
 #include "selxInterfaces.h"
-#include "itkMacro.h"
-//#include <boost/static_assert.hpp>
-#include <boost/mpl/assert.hpp>
+#include "selxStaticErrorMessageRevealT.h"
+#include "selxPodString.h"
 //#include <type_traits>
 
 namespace selx
@@ -37,16 +36,7 @@ namespace selx
 template< typename T >
 struct InterfaceName
 {
-  struct PLEASE_IMPLEMENT_INTERFACENAME_GET_FOR_THIS_TYPE;
-  //TODO message produced by BOOST_MPL_ASSERT_MSG is not yet very clear
-  BOOST_MPL_ASSERT_MSG( false, PLEASE_IMPLEMENT_INTERFACENAME_GET_FOR_THIS_TYPE, ( T ) );
-  static const char * Get()
-  {
-    //static_assert(false, "Please implement a template specialization for the appropriate InterfaceName");
-    // Exception should never happen since build should fail due to static assert of BOOST_MPL_ASSERT_MSG.
-    itkGenericExceptionMacro( "Please implement a template specialization for the appropriate InterfaceName" );
-    return typeid( T ).name();
-  }
+  static_assert(StaticErrorMessageRevealT<T>::False, "Please Implement InterfaceName<InterfaceType> for this InterfaceType");
 };
 
 // The specializations for each type of Interface supported by the toolbox
@@ -239,7 +229,6 @@ struct InterfaceName< ReconnectTransformInterface >
   }
 };
 
-
 template< >
 struct InterfaceName< LogInterface >
 {
@@ -247,18 +236,68 @@ struct InterfaceName< LogInterface >
   {
     return "LogInterface";
   }
+}
+
+template< class InternalComputationValueType, int D >
+struct InterfaceName< itkTransformParametersAdaptorsContainerInterface< InternalComputationValueType, D >>
+{
+  static const char * Get()
+  {
+    return "itkTransformParametersAdaptorsContainerInterface";
+  }
+};
+
+template< class InternalComputationValueType, int D >
+struct InterfaceName< itkGaussianExponentialDiffeomorphicTransformParametersAdaptorsContainerInterface< InternalComputationValueType, D >>
+{
+  static const char * Get()
+  {
+    return "itkGaussianExponentialDiffeomorphicTransformParametersAdaptorsContainerInterface";
+  }
 };
 
 // partial specialization of InterfaceName
 // InterfaceName<T>::Get() should return the same name no matter whether T is an acceptor or provider interface.
-template< typename T1 >
-struct InterfaceName< InterfaceAcceptor< T1 >>
+template< typename InterfaceType >
+struct InterfaceName< InterfaceAcceptor< InterfaceType >>
 {
   static const char * Get()
   {
-    return InterfaceName< T1 >::Get();
+    return InterfaceName< InterfaceType >::Get();
+  }
+};
+
+//************experimental**********
+
+template< typename T >
+struct Properties
+{
+  //static_assert(StaticErrorMessageRevealT<T>::False, "Please Implement InterfaceProperties<InterfaceType> for this InterfaceType");
+  static const std::map<std::string, std::string> Get()
+  {
+    return{ { "NameOfInterface", InterfaceName< T >::Get() } };
+  }
+};
+
+// The specializations for each type of Interface supported by the toolbox
+
+template< int D, class TPixel >
+struct Properties< itkImageFixedInterface< D, TPixel >>
+{
+  static const std::map<std::string, std::string> Get()
+  {
+    return{ { "NameOfInterface", "itkImageFixedInterface" }, { "Dimensionality", std::to_string(D) }, { "PixelType", PodString<TPixel>::Get() } };
+  }
+};
+
+
+template< class C>
+struct Properties< itkOptimizerv4Interface< C > >
+{
+  static const std::map<std::string, std::string> Get()
+  {
+    return{ { "NameOfInterface", "itkOptimizerv4Interface" }, { "InternalComputationValueType", PodString<C>::Get() } };
   }
 };
 } // end namespace selx
-
 #endif // #define InterfaceTraits_h

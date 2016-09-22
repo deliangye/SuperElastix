@@ -82,12 +82,12 @@ public:
       std::cout << "  CL Current level:           " << currentLevel << std::endl;
       std::cout << "   SF Shrink factor:          " << shrinkFactors << std::endl;
       std::cout << "   SS Smoothing sigma:        " << smoothingSigmas[ currentLevel ] << std::endl;
-      std::cout << "   RFP Required fixed params: " << adaptors[ currentLevel ]->GetRequiredFixedParameters() << std::endl;
+      //std::cout << "   RFP Required fixed params: " << adaptors[ currentLevel ]->GetRequiredFixedParameters() << std::endl;
       std::cout << "   LR Final learning rate:    " << optimizer->GetLearningRate() << std::endl;
       std::cout << "   FM Final metric value:     " << optimizer->GetCurrentMetricValue() << std::endl;
       std::cout << "   SC Optimizer scales:       " << optimizer->GetScales() << std::endl;
       std::cout << "   FG Final metric gradient (sample of values): ";
-      if( gradient.GetSize() < 10 )
+      if( gradient.GetSize() < 16 )
       {
         std::cout << gradient;
       }
@@ -115,7 +115,8 @@ public:
 };
 
 template< int Dimensionality, class TPixel >
-ItkImageRegistrationMethodv4Component< Dimensionality, TPixel >::ItkImageRegistrationMethodv4Component()
+ItkImageRegistrationMethodv4Component< Dimensionality, TPixel >::ItkImageRegistrationMethodv4Component() : m_TransformAdaptorsContainerInterface(
+    nullptr )
 {
   m_theItkFilter = TheItkFilterType::New();
   m_theItkFilter->InPlaceOn();
@@ -163,6 +164,16 @@ ItkImageRegistrationMethodv4Component< Dimensionality, TPixel >::Set( itkTransfo
 {
   this->m_theItkFilter->SetInitialTransform( component->GetItkTransform() );
 
+  return 0;
+}
+
+
+template< int Dimensionality, class TPixel >
+int
+ItkImageRegistrationMethodv4Component< Dimensionality, TPixel >::Set( TransformParametersAdaptorsContainerInterfaceType * component )
+{
+  // store the interface to the ParametersAdaptorsContainer since during the setup of the connections the TransformParametersAdaptorComponent might not be fully connected and thus does not have the adaptors ready.
+  this->m_TransformAdaptorsContainerInterface = component;
   return 0;
 }
 
@@ -228,66 +239,12 @@ ItkImageRegistrationMethodv4Component< Dimensionality, TPixel >::RunRegistration
 
   this->m_theItkFilter->SetOptimizer( optimizer );
 
-  // Below some hard coded options. Eventually, these should be part of new components.
-  this->m_theItkFilter->SetNumberOfLevels( 3 );
-
-  // Shrink the virtual domain by specified factors for each level.  See documentation
-  // for the itkShrinkImageFilter for more detailed behavior.
-  typename TheItkFilterType::ShrinkFactorsArrayType shrinkFactorsPerLevel;
-  shrinkFactorsPerLevel.SetSize( 3 );
-  shrinkFactorsPerLevel[ 0 ] = 4;
-  shrinkFactorsPerLevel[ 1 ] = 2;
-  shrinkFactorsPerLevel[ 2 ] = 1;
-  this->m_theItkFilter->SetShrinkFactorsPerLevel( shrinkFactorsPerLevel );
-
-  // Smooth by specified gaussian sigmas for each level.  These values are specified in
-  // physical units.
-  typename TheItkFilterType::SmoothingSigmasArrayType smoothingSigmasPerLevel;
-  smoothingSigmasPerLevel.SetSize( 3 );
-  smoothingSigmasPerLevel[ 0 ] = 4;
-  smoothingSigmasPerLevel[ 1 ] = 2;
-  smoothingSigmasPerLevel[ 2 ] = 1;
-  this->m_theItkFilter->SetSmoothingSigmasPerLevel( smoothingSigmasPerLevel );
-
-  // TODO for now we hard code the TransformAdaptors for stationary velocity fields.
-  typedef double                                                                                                RealType;
-  typedef itk::GaussianExponentialDiffeomorphicTransform< RealType, Dimensionality >                            ConstantVelocityFieldTransformType;
-  typedef typename ConstantVelocityFieldTransformType::ConstantVelocityFieldType                                ConstantVelocityFieldType;
-  typedef itk::GaussianExponentialDiffeomorphicTransformParametersAdaptor< ConstantVelocityFieldTransformType > VelocityFieldTransformAdaptorType;
-
-  typename TheItkFilterType::TransformParametersAdaptorsContainerType adaptors;
-
-  for( unsigned int level = 0; level < shrinkFactorsPerLevel.Size(); level++ )
+  if( this->m_TransformAdaptorsContainerInterface != nullptr )
   {
-    // We use the shrink image filter to calculate the fixed parameters of the virtual
-    // domain at each level.  To speed up calculation and avoid unnecessary memory
-    // usage, we could calculate these fixed parameters directly.
-
-    typedef itk::ShrinkImageFilter< FixedImageType, FixedImageType > ShrinkFilterType;
-    typename ShrinkFilterType::Pointer shrinkFilter = ShrinkFilterType::New();
-    shrinkFilter->SetShrinkFactors( shrinkFactorsPerLevel[ level ] );
-    shrinkFilter->SetInput( fixedImage );
-    shrinkFilter->Update();
-
-    typename VelocityFieldTransformAdaptorType::Pointer fieldTransformAdaptor = VelocityFieldTransformAdaptorType::New();
-    fieldTransformAdaptor->SetRequiredSpacing( shrinkFilter->GetOutput()->GetSpacing() );
-    fieldTransformAdaptor->SetRequiredSize( shrinkFilter->GetOutput()->GetBufferedRegion().GetSize() );
-    fieldTransformAdaptor->SetRequiredDirection( shrinkFilter->GetOutput()->GetDirection() );
-    fieldTransformAdaptor->SetRequiredOrigin( shrinkFilter->GetOutput()->GetOrigin() );
-
-    adaptors.push_back( fieldTransformAdaptor.GetPointer() );
+    auto adaptors = this->m_TransformAdaptorsContainerInterface->GetItkTransformParametersAdaptorsContainer();
+    this->m_theItkFilter->SetTransformParametersAdaptorsPerLevel( adaptors 
+        );
   }
-
-  /*
-  typename VelocityFieldTransformAdaptorType::Pointer fieldTransformAdaptor = VelocityFieldTransformAdaptorType::New();
-  fieldTransformAdaptor->SetRequiredSpacing(fixedImage->GetSpacing());
-  fieldTransformAdaptor->SetRequiredSize(fixedImage->GetBufferedRegion().GetSize());
-  fieldTransformAdaptor->SetRequiredDirection(fixedImage->GetDirection());
-  fieldTransformAdaptor->SetRequiredOrigin(fixedImage->GetOrigin());
-
-  adaptors.push_back(fieldTransformAdaptor.GetPointer());
-  */
-  this->m_theItkFilter->SetTransformParametersAdaptorsPerLevel( adaptors );
 
   typedef CommandIterationUpdate< TheItkFilterType > RegistrationCommandType;
   typename RegistrationCommandType::Pointer registrationObserver = RegistrationCommandType::New();
@@ -347,6 +304,110 @@ ItkImageRegistrationMethodv4Component< Dimensionality, TPixel >
       }
     }
   }
+  else if( criterion.first == "NumberOfLevels" ) //Supports this?
+  {
+    meetsCriteria = true;
+    if( criterion.second.size() == 1 )
+    {
+      if( this->m_NumberOfLevelsLastSetBy == "" ) // check if some other settings set the NumberOfLevels
+      {
+        // try catch?
+        this->m_theItkFilter->SetNumberOfLevels( std::stoi( criterion.second[ 0 ] ) );
+        this->m_NumberOfLevelsLastSetBy = criterion.first;
+      }
+      else
+      {
+        if( this->m_theItkFilter->GetNumberOfLevels() != std::stoi( criterion.second[ 0 ] ) )
+        {
+          // TODO log error?
+          std::cout << "A conflicting NumberOfLevels was set by " << this->m_NumberOfLevelsLastSetBy << std::endl;
+          meetsCriteria = false;
+          return meetsCriteria;
+        }
+      }
+    }
+    else
+    {
+      // TODO log error?
+      std::cout << "NumberOfLevels accepts one number only" << std::endl;
+      meetsCriteria = false;
+      return meetsCriteria;
+    }
+  }
+  else if( criterion.first == "ShrinkFactorsPerLevel" ) //Supports this?
+  {
+    meetsCriteria = true;
+
+    const int impliedNumberOfResolutions = criterion.second.size();
+
+    if( this->m_NumberOfLevelsLastSetBy == "" ) // check if some other settings set the NumberOfLevels
+    {
+      // try catch?
+      this->m_theItkFilter->SetNumberOfLevels( impliedNumberOfResolutions );
+      this->m_NumberOfLevelsLastSetBy = criterion.first;
+    }
+    else
+    {
+      if( this->m_theItkFilter->GetNumberOfLevels() != impliedNumberOfResolutions )
+      {
+        // TODO log error?
+        std::cout << "A conflicting NumberOfLevels was set by " << this->m_NumberOfLevelsLastSetBy << std::endl;
+        meetsCriteria = false;
+        return meetsCriteria;
+      }
+    }
+
+    itk::Array< itk::SizeValueType > shrinkFactorsPerLevel;
+    shrinkFactorsPerLevel.SetSize( impliedNumberOfResolutions );
+
+    unsigned int resolutionIndex = 0;
+    for( auto const & criterionValue : criterion.second ) // auto&& preferred?
+    {
+      shrinkFactorsPerLevel[ resolutionIndex ] = std::stoi( criterionValue );
+      ++resolutionIndex;
+    }
+    // try catch?
+    this->m_theItkFilter->SetShrinkFactorsPerLevel( shrinkFactorsPerLevel );
+  }
+  else if( criterion.first == "SmoothingSigmasPerLevel" ) //Supports this?
+  {
+    meetsCriteria = true;
+
+    const int impliedNumberOfResolutions = criterion.second.size();
+
+    if( this->m_NumberOfLevelsLastSetBy == "" ) // check if some other settings set the NumberOfLevels
+    {
+      // try catch?
+      this->m_theItkFilter->SetNumberOfLevels( impliedNumberOfResolutions );
+      this->m_NumberOfLevelsLastSetBy = criterion.first;
+    }
+    else
+    {
+      if( this->m_theItkFilter->GetNumberOfLevels() != impliedNumberOfResolutions )
+      {
+        // TODO log error?
+        std::cout << "A conflicting NumberOfLevels was set by " << this->m_NumberOfLevelsLastSetBy << std::endl;
+        meetsCriteria = false;
+        return meetsCriteria;
+      }
+    }
+
+    itk::Array< TransformInternalComputationValueType > smoothingSigmasPerLevel;
+
+    smoothingSigmasPerLevel.SetSize( impliedNumberOfResolutions );
+
+    unsigned int resolutionIndex = 0;
+    for( auto const & criterionValue : criterion.second ) // auto&& preferred?
+    {
+      smoothingSigmasPerLevel[ resolutionIndex ] = std::stoi( criterionValue );
+      ++resolutionIndex;
+    }
+    // try catch?
+    // Smooth by specified gaussian sigmas for each level.  These values are specified in
+    // physical units.
+    this->m_theItkFilter->SetSmoothingSigmasPerLevel( smoothingSigmasPerLevel );
+  }
+
   return meetsCriteria;
 }
 } //end namespace selx

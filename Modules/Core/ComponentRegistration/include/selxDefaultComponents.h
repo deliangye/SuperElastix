@@ -31,6 +31,8 @@
 #include "selxItkMeanSquaresImageToImageMetricv4.h"
 #include "selxItkGradientDescentOptimizerv4.h"
 #include "selxItkGaussianExponentialDiffeomorphicTransform.h"
+#include "selxItkGaussianExponentialDiffeomorphicTransformParametersAdaptorsContainerComponent.h"
+#include "selxItkAffineTransform.h"
 #include "selxItkTransformDisplacementFilter.h"
 #include "selxItkResampleFilter.h"
 #include "selxRegistrationController.h"
@@ -39,7 +41,7 @@
 
 namespace selx
 {
-using DefaultComponents = selx::TypeList< 
+using DefaultComponents = selx::TypeList<
   DisplacementFieldItkImageFilterSinkComponent< 2, float >,
   ItkImageSinkComponent< 2, float >,
   ItkImageSourceFixedComponent< 2, float >,
@@ -52,9 +54,11 @@ using DefaultComponents = selx::TypeList<
   ItkMeanSquaresImageToImageMetricv4Component< 2, float >,
   ItkGradientDescentOptimizerv4Component< double >,
   ItkGaussianExponentialDiffeomorphicTransformComponent< double, 2 >,
+  ItkGaussianExponentialDiffeomorphicTransformParametersAdaptorsContainerComponent< 2, double >,
+  ItkAffineTransformComponent< double, 2 >,
   ItkTransformDisplacementFilterComponent< 2, float, double >,
   ItkResampleFilterComponent< 2, float, double >,
-  RegistrationControllerComponent < >,
+  RegistrationControllerComponent< >,
   ItkSmoothingRecursiveGaussianImageFilterComponent< 2, float >
   >;
 }

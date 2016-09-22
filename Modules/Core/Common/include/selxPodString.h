@@ -16,25 +16,57 @@
  *  limitations under the License.
  *
  *=========================================================================*/
+#ifndef selxPodString_h
+#define selxPodString_h
 
-#include "selxComponentBase.h"
+#include "selxStaticErrorMessageRevealT.h"
 
 namespace selx
 {
-bool
-ComponentBase::MeetsCriterionBase( const CriterionType & criterion )
-{
-  if( criterion.first == "NameOfClass" )
-  {
-    if( criterion.second.size() != 1 )
-    {
-      itkExceptionMacro( "The criterion NameOfClass may have only 1 value" );
-    }
-    return ( criterion.second[ 0 ] == this->GetNameOfClass() );
-  }
 
-  // else pass criterion to derived Component
-  return this->MeetsCriterion( criterion );
+
+	template< typename T >
+	struct PodString
+	{
+		static_assert(StaticErrorMessageRevealT<T>::False, "Please Implement PodString<T> for this T");
+	};
+
+	template< >
+	struct PodString< unsigned int >
+	{
+		static const char * Get()
+		{
+			return "unsigned int";
+		}
+	};
+
+	template< >
+	struct PodString< int >
+	{
+		static const char * Get()
+		{
+			return "int";
+		}
+	};
+
+	template< >
+	struct PodString< float >
+	{
+		static const char * Get()
+		{
+			return "float";
+		}
+	};
+
+
+	template< >
+	struct PodString< double >
+	{
+		static const char * Get()
+		{
+			return "double";
+		}
+	};
 }
 
-} // end namespace selx
+#endif //selxPodString_h

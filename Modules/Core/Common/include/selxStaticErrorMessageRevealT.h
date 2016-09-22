@@ -16,25 +16,14 @@
  *  limitations under the License.
  *
  *=========================================================================*/
-
-#include "selxComponentBase.h"
+#ifndef selxStaticErrorMessageRevealT_h
+#define selxStaticErrorMessageRevealT_h
 
 namespace selx
 {
-bool
-ComponentBase::MeetsCriterionBase( const CriterionType & criterion )
-{
-  if( criterion.first == "NameOfClass" )
-  {
-    if( criterion.second.size() != 1 )
-    {
-      itkExceptionMacro( "The criterion NameOfClass may have only 1 value" );
-    }
-    return ( criterion.second[ 0 ] == this->GetNameOfClass() );
-  }
-
-  // else pass criterion to derived Component
-  return this->MeetsCriterion( criterion );
+	// helper to display type name in static assert error message (required, at least for VC++ 2013)
+	template <typename T>
+	struct StaticErrorMessageRevealT { enum { False = false }; };
 }
 
-} // end namespace selx
+#endif // selxStaticErrorMessageRevealT_h

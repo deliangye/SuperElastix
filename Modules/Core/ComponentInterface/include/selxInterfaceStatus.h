@@ -17,24 +17,10 @@
  *
  *=========================================================================*/
 
-#include "selxComponentBase.h"
-
+#ifndef interfaceStatus_h
+#define interfaceStatus_h
 namespace selx
 {
-bool
-ComponentBase::MeetsCriterionBase( const CriterionType & criterion )
-{
-  if( criterion.first == "NameOfClass" )
-  {
-    if( criterion.second.size() != 1 )
-    {
-      itkExceptionMacro( "The criterion NameOfClass may have only 1 value" );
-    }
-    return ( criterion.second[ 0 ] == this->GetNameOfClass() );
-  }
-
-  // else pass criterion to derived Component
-  return this->MeetsCriterion( criterion );
+enum class InterfaceStatus { success, noaccepter, noprovider, multiple };
 }
-
-} // end namespace selx
+#endif //interfaceStatus_h

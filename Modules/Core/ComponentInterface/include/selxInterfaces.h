@@ -27,6 +27,9 @@
 #include "itkImageToImageFilter.h"
 #include "itkImageToImageMetricv4.h"
 #include "itkObjectToObjectOptimizerBase.h"
+#include "itkTransformParametersAdaptorBase.h"
+#include "itkGaussianExponentialDiffeomorphicTransformParametersAdaptor.h"
+#include "itkGaussianExponentialDiffeomorphicTransform.h"
 
 #include "itkImage.h"
 #include "itkMesh.h"
@@ -262,6 +265,42 @@ public:
   typedef typename TransformType::Pointer                                                          TransformPointer;
 
   virtual TransformPointer GetItkTransform() = 0;
+};
+
+template< class TransformInternalComputationValueType, int Dimensionality >
+class itkTransformParametersAdaptorsContainerInterface
+{
+public:
+
+  // TransformBaseType acts as a container of the types: TParametersValueType, NInputDimensions, NOutputDimensions
+  using TransformBaseType                        = itk::Transform< TransformInternalComputationValueType, Dimensionality, Dimensionality >;
+  using TransformParametersAdaptorBaseType       = itk::TransformParametersAdaptorBase< TransformBaseType >;
+  using TransformParametersAdaptorsContainerType = std::vector< typename TransformParametersAdaptorBaseType::Pointer >;
+
+  virtual TransformParametersAdaptorsContainerType GetItkTransformParametersAdaptorsContainer() = 0;
+};
+
+template< class TransformInternalComputationValueType, int Dimensionality >
+class itkGaussianExponentialDiffeomorphicTransformParametersAdaptorsContainerInterface
+{
+public:
+
+  using TransformBaseType                  = itk::Transform< TransformInternalComputationValueType, Dimensionality, Dimensionality >;
+  using TransformParametersAdaptorBaseType = itk::TransformParametersAdaptorBase< TransformBaseType >;
+
+  using GaussianExponentialDiffeomorphicTransformType
+      = itk::GaussianExponentialDiffeomorphicTransform< TransformInternalComputationValueType, Dimensionality >;
+
+  using TransformParametersAdaptorType
+      = itk::GaussianExponentialDiffeomorphicTransformParametersAdaptor<
+    GaussianExponentialDiffeomorphicTransformType >;
+  using TransformParametersAdaptorPointer = typename TransformParametersAdaptorType::Pointer;
+  //using TransformParametersAdaptorsContainerType = std::vector<TransformParametersAdaptorPointer>;
+  using TransformParametersAdaptorsContainerType = std::vector< typename TransformParametersAdaptorBaseType::Pointer >;
+
+  //using TransformParametersAdaptorsContainerType = typename TransformParametersAdaptorType::TransformParametersAdaptorsContainerType;
+
+  virtual TransformParametersAdaptorsContainerType GetItkGaussianExponentialDiffeomorphicTransformParametersAdaptorsContainer() = 0;
 };
 
 template< typename TFixedImage, typename TMovingImage >
