@@ -17,14 +17,14 @@
  *
  *=========================================================================*/
 
-#include "selxLogComponent.h"
+#include "selxLogger.h"
 
 #include "gtest/gtest.h"
 
 using namespace selx;
 
- TEST( selxLogComponent, Initialization )
+ TEST( selxLogger, Initialization )
 {
-  LogComponent::Pointer logger = LogComponent::New();
+  Logger::Pointer logger = Logger::New();
   EXPECT_TRUE( true );
 }

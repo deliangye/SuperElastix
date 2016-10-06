@@ -24,6 +24,11 @@ cmake_minimum_required( VERSION 3.0.2 )
 #set( MSVC_INCREMENTAL_DEFAULT ON )
 
 # ---------------------------------------------------------------------
+# Policies
+
+cmake_policy( SET CMP0064 OLD )
+
+# ---------------------------------------------------------------------
 project( SuperElastix )
 
 enable_language(C)
@@ -88,7 +93,6 @@ include_directories( ${Boost_INCLUDE_DIRS} )
 # For now we just enable all modules
 include( selxModules )
 selxmodule_enable( ModuleCore )
-selxmodule_enable( ModuleLog )
 selxmodule_enable( ModuleExamples )
 selxmodule_enable( ModuleSinksAndSources )
 selxmodule_enable( ModuleItkSmoothingRecursiveGaussianImageFilter )

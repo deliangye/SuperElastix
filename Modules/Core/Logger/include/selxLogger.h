@@ -17,50 +17,46 @@
  *
  *=========================================================================*/
 
+// http://stackoverflow.com/questions/20086754/how-to-use-boost-log-from-multiple-files-with-gloa/22068278#22068278
 
-#ifndef selxLogComponent_h
-#define selxLogComponent_h
+#ifndef selxLogger_h
+#define selxLogger_h
 
 #include "selxInterfaces.h"
 #include "selxSuperElastixComponent.h"
 
-#include <boost/move/utility.hpp>
-#include <boost/log/sources/logger.hpp>
-#include <boost/log/sources/record_ostream.hpp>
-#include <boost/log/sources/global_logger_storage.hpp>
+#include <boost/log/trivial.hpp>
+#include <boost/log/expressions.hpp>
+#include <boost/log/sinks/text_file_backend.hpp>
 #include <boost/log/utility/setup/file.hpp>
 #include <boost/log/utility/setup/common_attributes.hpp>
-#include <boost/log/core.hpp>
+#include <boost/log/sources/severity_logger.hpp>
+#include <boost/log/sources/record_ostream.hpp>
+
+namespace src = boost::log::sources;
 
 namespace selx 
 {
 
 enum SeverityLevel
 {
-    TRACE,
-    DEBUG,
-    INFO,
-    WARNING,
-    ERROR,
-    FATAL
+  TRACE,
+  DEBUG,
+  INFO,
+  WARNING,
+  ERROR,
+  FATAL
 };
-
-class LogComponent : 
-  public SuperElastixComponent<
-    Accepting< >,
-    Providing
-    <
-      LogInterface
-    >
-  >
+  
+class Logger : public itk::LightObject
 {
 public:
 
-  // FB: somehow the selxNewMacro does not work. The itkNewMacro, however works. Something to figure out why...
-  // selxNewMacro( LogComponent, ComponentBase );
+  //@kasper: somehow the selxNewMacro does not work. The itkNewMacro, however works. Something to figure out why...
+  //selxNewMacro( Logger, ComponentBase );
 
   /** Standard class typedefs. */
-  typedef LogComponent                    Self;
+  typedef Logger                          Self;
   typedef ComponentBase                   Superclass;
   typedef itk::SmartPointer< Self >       Pointer;
   typedef itk::SmartPointer< const Self > ConstPointer;
@@ -70,29 +66,20 @@ public:
   itkNewMacro( Self );
 
   /** Run-time type information (and related methods). */
-  itkTypeMacro( LogComponent, ComponentBase) ;
+  itkTypeMacro( Logger, ComponentBase );
 
-  LogComponent();
-  virtual ~LogComponent(){};
+  Logger();
+  virtual ~Logger(){};
 
-  void Log( boost::log::trivial::severity_level severity_level, const std::string message );
-
-  std::ostream& operator<<( std::ostream& )
-  {
-    this->Log( this->m_SeverityLevel, strm.str() );
-  }
-
-  virtual bool MeetsCriterion( const CriterionType & criterion)  override;
-
-  static const char * GetDescription() { return "Log Component"; }
+  void Log( const std::string message, SeverityLevel severity_level );
 
 private:
   
-  boost::log::severity_level m_LogLevel;
-  boost::log::source::severity_logger m_Logger;
+  src::severity_logger< SeverityLevel > m_Logger;
+  SeverityLevel m_LogLevel;
   
 };
 
 }
 
-#endif // selxLogComponent_h
+#endif // selxLogger_h

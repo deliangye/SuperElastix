@@ -21,15 +21,16 @@ set( MODULE ModuleCore )
 
 # Export include files
 set( ${MODULE}_INCLUDE_DIRS
+${${MODULE}_SOURCE_DIR}/Blueprints/include
   ${${MODULE}_SOURCE_DIR}/Common/include
-  ${${MODULE}_SOURCE_DIR}/Blueprints/include
-  ${${MODULE}_SOURCE_DIR}/ParameterObject/include
   ${${MODULE}_SOURCE_DIR}/ComponentInterface/include
+  ${${MODULE}_SOURCE_DIR}/ComponentRegistration/include
   ${${MODULE}_SOURCE_DIR}/ConfigurationReader/include
   ${${MODULE}_SOURCE_DIR}/Filter/include
   ${${MODULE}_SOURCE_DIR}/FileIO/include
-  ${${MODULE}_SOURCE_DIR}/ComponentRegistration/include
-  )
+  ${${MODULE}_SOURCE_DIR}/Logger/include
+  ${${MODULE}_SOURCE_DIR}/ParameterObject/include
+)
 
 # Collect header files for Visual Studio Project 
 # http://stackoverflow.com/questions/8316104/specify-how-cmake-creates-visual-studio-project
@@ -49,6 +50,7 @@ set( ${MODULE}_TESTS
   ${${MODULE}_SOURCE_DIR}/ConfigurationReader/test/selxConfigurationReaderTest.cxx
   ${${MODULE}_SOURCE_DIR}/Filter/test/selxSuperElastixFilterTest.cxx
   ${${MODULE}_SOURCE_DIR}/FileIO/test/selxAnyFileIOTest.cxx
+  ${${MODULE}_SOURCE_DIR}/Logger/test/selxLoggerTest.cxx
 )
 
 # Module source files
@@ -63,4 +65,4 @@ set( ${MODULE}_SOURCE_FILES
 
 # Compile library
 add_library( ${MODULE} STATIC ${${MODULE}_SOURCE_FILES} ${${MODULE}_HEADER_FILES} )
-target_link_libraries( ${MODULE} ${SUPERELASTIX_LIBRARIES} )
+target_link_libraries( ${MODULE} ${SUPERELASTIX_LIBRARIES} boost_log )
